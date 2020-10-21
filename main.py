@@ -46,7 +46,18 @@ def treset():
 def log(content,c=Color.White):
     print('{begin}{txt}{end}'.format(begin=tcolor(c),txt=content,end=treset()))
 
-
+def download_image(url):
+    # log('download_image:{}'.format(url))
+    pic = None
+    try:
+        pic = requests.get(url, timeout=10)
+    except requests.exceptions.ConnectionError:
+        log('【错误】当前图片无法下载',Color.Red)
+    
+    if pic and pic.status_code == 200:
+        # log("URL:{} 下载成功！".format(url),Color.Green)
+        return Image.open(io.BytesIO(pic.content))
+    return None
 class Mangabz:
     """
     日本漫画漫画章节图片下载
@@ -101,15 +112,24 @@ class Mangabz:
     def run(self):
         mangabz_cid, mangabz_mid, mangabz_viewsign_dt, mangabz_viewsign, page_total = self.get_chapter_argv()
         log("章节:{},一共有{}张图片".format(self.name,page_total))
+        links=[]
         for i in range(int(page_total)):
             i += 1
             js_str = self.get_images_js(i, mangabz_cid, mangabz_mid, mangabz_viewsign_dt, mangabz_viewsign)
             imagesList = execjs.eval(js_str)
             # print(imagesList[0])
-
-            for j in range(3): # retry 3 times if download failed
-                if self.download_image(imagesList[0],i,int(page_total)):
-                    break
+            links.append(imagesList[0])
+            # for j in range(3): # retry 3 times if download failed
+            #     if self.download_image(imagesList[0],i,int(page_total)):
+            #         break
+        executor = ThreadPoolExecutor()
+        all_task=[executor.submit(download_image, (url)) for url in links]
+        wait(all_task, return_when=ALL_COMPLETED)
+        images=[future.result() for future in all_task]
+        images[0].save(self.name+'.pdf', "PDF", resolution=100.0,
+                                   save_all=True, append_images=images[1:])
+        log("保存章节:{}.pdf 成功!".format(self.name))
+            
 
 #dir is not keyword
 def makedir_and_cd(whatever):
@@ -121,10 +141,8 @@ def makedir_and_cd(whatever):
   # cd into the specified directory
   os.chdir(whatever)
 
-def download_chpater(link,chapter_name):
-    # '{}{}'.format(website,link['href'])
-    mangabz = Mangabz(url=link,name=chapter_name)
-    mangabz.run()
+
+    
 
 if __name__ == '__main__':
     website='http://mangabz.com'
@@ -150,8 +168,6 @@ if __name__ == '__main__':
         makedir_and_cd(anim_name)
         alinks = soup.select('a')
         download_count = 0
-        executor = ThreadPoolExecutor(max_workers=8)
-        all_task=[]
         for link in alinks:
             # print(type(link.attrs),link.attrs)
             # print('class' in link.attrs.keys(),link.text)
@@ -161,8 +177,8 @@ if __name__ == '__main__':
                 file_name=re.sub(' +', '', link.text)
                 if Path(file_name+'.pdf').exists():
                     continue
-                all_task.append(executor.submit(download_chpater, '{}{}'.format(website,link['href']),file_name))
-        wait(all_task, return_when=ALL_COMPLETED)       
+                mangabz = Mangabz(url='{}{}'.format(website,link['href']),name=file_name)
+                mangabz.run()
         log('漫画:{},下载完成,下载章节数量:{}!'.format(anim_title,download_count),Color.Green)
     # mangabz = Mangabz(url='http://mangabz.com/m119688/', name='test')
     # mangabz.merge_images(21)
