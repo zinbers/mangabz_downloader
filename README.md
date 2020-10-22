@@ -8,5 +8,7 @@
 >chapter_range,可以配空([])，则下载全部；可以配置1一个数字([n])，n代表开始章节，即从第n章开始下载；也可以配置2个数字([m,n]),m为开始章节，n为结束章节，即下载从m到n之间的章节
 
 #此项目自带workflow action
+
 提交修改或者点击star都可以触发 workflow
+
 action完成后自己去action里面下载已经打包好的漫画
