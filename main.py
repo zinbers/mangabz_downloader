@@ -152,21 +152,37 @@ if __name__ == '__main__':
         os.chdir(download_path)
         makedir_and_cd(anim_name)
         alinks = soup.select('a')
-        download_count = 0
+        total_chapter_count = 0
+        download_chapter_count = 0
+        chapter_range=anim_cfg['chapter_range']
+        chapter_range.sort()
         executor = ThreadPoolExecutor(max_workers=8)
         all_task=[]
         for link in alinks:
             # print(type(link.attrs),link.attrs)
             # print('class' in link.attrs.keys(),link.text)
             if 'class' in link.attrs.keys() and 'detail-list-form-item' in link['class']:
-                # print(link['href'],re.sub(' +', '', link.text))
-                download_count = download_count + 1
+        #         # print(link['href'],re.sub(' +', '', link.text))
+                total_chapter_count = total_chapter_count + 1
                 file_name=re.sub(' +', '', link.text)
+                curr_chapter = 0
+                m = re.search(r'(?<=第)\d+', file_name)
+                if m:
+                    curr_chapter=int(m.group(0))
+                if len(chapter_range) == 1: # its start chapter
+                    if curr_chapter < chapter_range[0]:
+                        continue
+                elif len(chapter_range) == 2:
+                    if curr_chapter < chapter_range[0] or curr_chapter > chapter_range[1]:
+                        continue
                 if Path(file_name+'.pdf').exists():
-                    continue
+                        continue
+                download_chapter_count = download_chapter_count + 1
                 all_task.append(executor.submit(download_chpater, '{}{}'.format(website,link['href']),file_name))
+                    
+        
         wait(all_task, return_when=ALL_COMPLETED)       
-        log('漫画:{},下载完成,下载章节数量:{}!'.format(anim_title,download_count),Color.Green)
+        log('漫画:{},下载完成,总章节:{},实际下载:{}!'.format(anim_title,total_chapter_count,download_chapter_count),Color.Green)
     # mangabz = Mangabz(url='http://mangabz.com/m119688/', name='test')
     # mangabz.merge_images(21)
     # mangabz.run()
