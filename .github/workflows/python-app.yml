@@ -27,3 +27,12 @@ jobs:
     - name: download
       run: |
         python ./main.py
+
+    - name: 'zip download folder'
+      run: zip -r download.zip download
+
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2
+      with:
+        name: download
+        path: download.zip   
