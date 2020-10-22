@@ -78,7 +78,7 @@ class Mangabz:
 
 
     def download_image(self,url,i,page_total):
-            #print("开始下载:第{}张！".format(i))
+            # print("开始下载:第{}张！".format(i))
             # print(i,url)
             pic = None
             try:
@@ -135,6 +135,9 @@ if __name__ == '__main__':
         log('读取config.json错误',Color.Red)
         exit(1)
     home_path=os.getcwd()
+    print(home_path)
+    download_path=home_path+'/'+'download'
+    makedir_and_cd(download_path)
     for (anim_title,anim_cfg) in cfg.items():
         # print(anim_title,anim_cfg['url'])
         ret = requests.get(url='{}/{}/'.format(website,anim_cfg['url']))
@@ -146,7 +149,7 @@ if __name__ == '__main__':
                 anim_name=span.text.strip()
                 break
         log('漫画标题为:{}'.format(anim_name),Color.Green)
-        os.chdir(home_path)
+        os.chdir(download_path)
         makedir_and_cd(anim_name)
         alinks = soup.select('a')
         download_count = 0
